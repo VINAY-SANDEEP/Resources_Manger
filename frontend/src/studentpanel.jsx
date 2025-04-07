@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 function StudentPanel() {
   const navigate = useNavigate();
   const [materials, setMaterials] = useState([]);
@@ -15,11 +17,18 @@ function StudentPanel() {
 
   const fetchMaterials = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/course-materials');
+      setLoading(true);
+      setError('');
+      const response = await axios.get(`${API_BASE_URL}/api/course-materials`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true
+      });
       setMaterials(response.data);
     } catch (error) {
-      setError('Error fetching course materials');
-      console.error('Error:', error);
+      console.error('Error fetching materials:', error);
+      setError('Failed to fetch course materials. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -95,7 +104,7 @@ function StudentPanel() {
                       <p className="text-gray-600 mb-4"><span className="font-medium">Notes:</span> {material.extraInfo}</p>
                     )}
                     <a
-                      href={`http://localhost:5000/${material.pdfPath}`}
+                      href={`${API_BASE_URL}/api/files/${material.pdfFilename}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"

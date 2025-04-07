@@ -4,31 +4,54 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 
+// CORS configuration
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Serve static files
+app.use('/uploads', express.static(uploadsDir));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/loginDB')
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://vinayd679:jaipubg123@cluster0.0xolvoa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+mongoose.connect(MONGODB_URI)
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => console.error('MongoDB connection error:', err));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
+    cb(null, Date.now() + '-' + file.originalname);
   }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -129,7 +152,6 @@ app.delete('/api/course-materials/:id', async (req, res) => {
         }
 
         // Delete the PDF file
-        const fs = require('fs');
         if (fs.existsSync(material.pdfPath)) {
             fs.unlinkSync(material.pdfPath);
         }
@@ -157,7 +179,6 @@ app.put('/api/course-materials/:id', upload.single('pdfFile'), async (req, res) 
         // If a new file is uploaded, update the pdfPath
         if (req.file) {
             // Delete the old file
-            const fs = require('fs');
             const material = await CourseMaterial.findById(req.params.id);
             if (material && fs.existsSync(material.pdfPath)) {
                 fs.unlinkSync(material.pdfPath);
@@ -213,7 +234,5 @@ const createSampleUsers = async () => {
 // Create sample users when server starts
 createSampleUsers();
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// For Vercel deployment
+module.exports = app;
