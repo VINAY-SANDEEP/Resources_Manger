@@ -1,0 +1,22 @@
+{
+  "name": "resources-manager-backend",
+  "version": "1.0.0",
+  "description": "Backend for Resources Manager Admin Panel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server",
+    "dev": "nodemon run dev"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "mongoose": "^7.8.6",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
