@@ -112,6 +112,48 @@ app.delete('/api/resources/:id', async (req, res) => {
     res.status(500).json({ message: 'Error deleting resource', error: error.message });
   }
 });
+
+// Route to update a resource
+app.put('/api/resources/:id', upload.single('pdf'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { subjectName, unitName, topic, extraInfo, secretCode } = req.body;
+
+    // Verify admin secret code
+    if (secretCode !== 'jaipubg123') {
+      return res.status(401).json({ message: 'Invalid admin code' });
+    }
+
+    const resource = await Resource.findById(id);
+    if (!resource) {
+      return res.status(404).json({ message: 'Resource not found' });
+    }
+
+    // Update resource fields
+    resource.subjectName = subjectName;
+    resource.unitName = unitName;
+    resource.topic = topic;
+    resource.extraInfo = extraInfo;
+
+    // If a new PDF is uploaded, update the pdfPath
+    if (req.file) {
+      // Delete the old PDF file if it exists
+      if (resource.pdfPath) {
+        const oldFilePath = path.join(__dirname, resource.pdfPath);
+        if (fs.existsSync(oldFilePath)) {
+          fs.unlinkSync(oldFilePath);
+        }
+      }
+      resource.pdfPath = `/uploads/${req.file.filename}`;
+    }
+
+    await resource.save();
+    res.json({ message: 'Resource updated successfully', resource });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating resource', error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
